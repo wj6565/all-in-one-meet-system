@@ -17,7 +17,7 @@ interface Booking {
   room: { id: string; name: string }
   user: { id: string; name: string; department?: { name: string } | null }
 }
-interface Session { user: { name: string; email: string; userType: string; userId: string } }
+interface Session { user: { name: string; email: string; userType: string; userId: string; department?: { name: string } | null } }
 
 export default function BookingPage() {
   const [session, setSession] = useState<Session | null>(null)
@@ -40,7 +40,9 @@ export default function BookingPage() {
   })
 
   useEffect(() => {
-    fetch('/api/auth/session').then(r => r.json()).then(setSession)
+    fetch('/api/auth/session').then(r => r.json()).then(data => {
+      setSession(data)
+    })
     fetch('/api/rooms').then(r => r.json()).then(data => {
       setRooms(data)
       setLoading(false)
@@ -144,40 +146,42 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 헤더 - 원본 스타일 */}
+      {/* 헤더 - 참조 시스템과 동일한 스타일 */}
       <div className="shadow-md sticky top-0 z-20" style={{ background: 'linear-gradient(135deg, #2f4394 0%, #4169e1 100%)' }}>
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3">
-          <div className="flex items-center gap-2 sm:gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center gap-4 sm:gap-6">
             {/* 로고 */}
             <div className="flex-shrink-0">
-              <Image src="/wonjin-logo.png" alt="WONJIN" width={100} height={28}
-                style={{ objectFit: 'contain', height: '28px', width: 'auto', filter: 'brightness(0) invert(1)' }} priority />
+              <Image src="/wonjin-logo.png" alt="WONJIN Group" width={120} height={40}
+                style={{ objectFit: 'contain', height: '40px', width: 'auto', filter: 'brightness(0) invert(1)' }} priority />
             </div>
             {/* 타이틀 */}
-            <div className="flex-1 min-w-0">
-              <h1 className="text-sm sm:text-lg font-bold text-white tracking-tight truncate">
-                <i className="fas fa-building mr-1 hidden sm:inline"></i>
-                회의실 예약 시스템
-              </h1>
+            <div className="flex-1 flex items-center min-w-0">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">회의실 예약 시스템</h1>
             </div>
-            {/* 우측 버튼들 */}
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <span className="text-white text-xs font-medium hidden sm:block mr-1 opacity-90">
-                {session?.user?.name}
-              </span>
-              <button onClick={() => window.location.href = '/home'}
-                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all" title="메인으로">
-                <i className="fas fa-home text-sm"></i>
-              </button>
+            {/* 우측: 사용자 정보 + 버튼들 */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              {/* 사용자 정보 (PC만) */}
+              <div className="hidden md:flex items-center gap-3 text-white">
+                <div className="text-right">
+                  <p className="text-sm font-semibold">{session?.user?.name}</p>
+                  <p className="text-xs opacity-80">{(session?.user as { department?: { name: string } | null })?.department?.name || '부서 없음'}</p>
+                </div>
+                <div className="w-px h-8 bg-white opacity-30"></div>
+              </div>
               {session?.user?.userType === 'admin' && (
                 <button onClick={() => window.location.href = '/admin/dashboard'}
-                  className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all" title="관리자">
-                  <i className="fas fa-cog text-sm"></i>
+                  className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all" title="관리자">
+                  <i className="fas fa-cog text-lg"></i>
                 </button>
               )}
+              <button onClick={() => window.location.href = '/home'}
+                className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all" title="메인으로">
+                <i className="fas fa-home text-lg"></i>
+              </button>
               <button onClick={handleLogout}
-                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all" title="로그아웃">
-                <i className="fas fa-sign-out-alt text-sm"></i>
+                className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all" title="로그아웃">
+                <i className="fas fa-sign-out-alt text-lg"></i>
               </button>
             </div>
           </div>
@@ -185,6 +189,41 @@ export default function BookingPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        {/* 요약 카드 - 참조 시스템 동일 */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-3 sm:p-5 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500">전체 회의실</p>
+                <p className="text-2xl sm:text-3xl font-bold text-blue-600">{rooms.length}</p>
+              </div>
+              <i className="fas fa-door-open text-2xl sm:text-4xl text-blue-200"></i>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-3 sm:p-5 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500">내 예약</p>
+                <p className="text-2xl sm:text-3xl font-bold text-green-600">
+                  {bookings.filter(b => b.user?.id === session?.user?.userId && b.status !== 'cancelled').length}
+                </p>
+              </div>
+              <i className="fas fa-calendar-check text-2xl sm:text-4xl text-green-200"></i>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow-sm p-3 sm:p-5 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500">오늘 예약</p>
+                <p className="text-2xl sm:text-3xl font-bold text-purple-600">
+                  {bookings.filter(b => b.status !== 'cancelled').length}
+                </p>
+              </div>
+              <i className="fas fa-clock text-2xl sm:text-4xl text-purple-200"></i>
+            </div>
+          </div>
+        </div>
+
         {/* 날짜 선택 + 뷰 전환 + 예약 버튼 */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
