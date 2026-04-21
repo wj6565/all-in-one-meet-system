@@ -185,13 +185,16 @@ export default function RoomsPage() {
                 </span>
               </div>
 
-              {/* 태블릿 바로가기 버튼 (isTabletMode인 경우) */}
-              {room.isTabletMode && room.isActive && (
+              {/* 태블릿 바로가기 버튼 - 항상 표시 (레퍼런스 시스템과 동일) */}
+              {room.isActive && (
                 <button
                   onClick={() => window.open(`/tablet/${room.code || room.id}`, '_blank')}
-                  className="w-full py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 border border-purple-200">
+                  className="w-full py-2 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+                  style={{ background: '#2f4394' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#263580')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#2f4394')}>
                   <i className="fas fa-tablet-alt"></i>
-                  태블릿 화면 열기
+                  태블릿 화면
                   <i className="fas fa-external-link-alt text-xs opacity-60"></i>
                 </button>
               )}
