@@ -1,0 +1,39 @@
+{
+  "name": "ALL IN ONE MEET SYSTEM",
+  "short_name": "MEET SYSTEM",
+  "description": "회의 예약, 녹음, 회의록 자동 생성 통합 시스템",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1d4ed8",
+  "theme_color": "#1d4ed8",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "ko-KR",
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "회의 녹음",
+      "url": "/meeting",
+      "description": "회의 녹음 시작"
+    },
+    {
+      "name": "회의실 예약",
+      "url": "/booking",
+      "description": "회의실 예약"
+    }
+  ]
+}

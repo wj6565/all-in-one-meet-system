@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================================
+// 통합 계정 시스템 (ALL IN ONE MEET SYSTEM 메인)
+// ============================================================
+
+// 관리자/사용자 계정 (로그인 계정)
+model Account {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("admin") // admin | user
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 부서
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  users     User[]
+}
+
+// 회사 사용자 (참석자 + 예약 사용자 통합)
+model User {
+  id            String      @id @default(cuid())
+  name          String
+  email         String      @unique
+  department    Department? @relation(fields: [departmentId], references: [id])
+  departmentId  String?
+  position      String?     // 직급
+  loginId       String?     @unique  // 로그인 아이디 (없으면 로그인 불가)
+  loginPassword String?              // bcrypt 해시
+  userType      String      @default("user") // user | admin | tablet
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  meetingAttendees MeetingAttendee[]
+  actionItems      ActionItem[]
+  bookings         Booking[]         // 회의실 예약
+}
+
+// ============================================================
+// 회의실 (녹음 + 예약 공유)
+// ============================================================
+model Room {
+  id            String    @id @default(cuid())
+  name          String
+  code          String?   @unique  // 예약 시스템용 코드 (예: ROOM-A)
+  location      String?
+  description   String?
+  capacity      Int       @default(10)
+  equipment     String?   // JSON array
+  isActive      Boolean   @default(true)
+  isTabletMode  Boolean   @default(false)
+  tabletPinCode String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  meetings Meeting[]
+  bookings Booking[]   // 예약 시스템 예약
+}
+
+// ============================================================
+// 회의 녹음 시스템 (ALL IN ONE MEET SYSTEM)
+// ============================================================
+model Meeting {
+  id          String    @id @default(cuid())
+  title       String
+  roomId      String
+  room        Room      @relation(fields: [roomId], references: [id])
+  startedAt   DateTime?
+  endedAt     DateTime?
+  status      String    @default("draft")
+  // draft | recording | paused | uploaded | transcribing | transcribed | summarizing | summarized | excel_generated | emailed | failed
+
+  recordingPath     String?
+  recordingSize     Int?
+  recordingDuration Int?
+
+  transcriptText  String?
+  transcriptPath  String?
+  summaryData     String? // JSON
+  excelPath       String?
+
+  errorMessage    String?
+  retryCount      Int     @default(0)
+
+  createdBy       String? // Account.id or User.id
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  attendees    MeetingAttendee[]
+  emailLogs    EmailLog[]
+  actionItems  ActionItem[]
+  processLogs  ProcessLog[]
+}
+
+// 회의 참석자
+model MeetingAttendee {
+  id        String  @id @default(cuid())
+  meetingId String
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  emailSent Boolean @default(false)
+
+  @@unique([meetingId, userId])
+}
+
+// 액션아이템
+model ActionItem {
+  id           String    @id @default(cuid())
+  meetingId    String
+  meeting      Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  assigneeId   String?
+  assignee     User?     @relation(fields: [assigneeId], references: [id])
+  assigneeName String?
+  content      String
+  dueDate      DateTime?
+  status       String    @default("pending") // pending | in_progress | done
+  createdAt    DateTime  @default(now())
+}
+
+// 메일 발송 이력
+model EmailLog {
+  id        String   @id @default(cuid())
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  toEmail   String
+  toName    String?
+  subject   String
+  status    String   @default("pending") // pending | sent | failed
+  errorMsg  String?
+  provider  String?
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+// 처리 로그
+model ProcessLog {
+  id        String   @id @default(cuid())
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  step      String
+  status    String
+  message   String?
+  duration  Int?
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// 회의실 예약 시스템
+// ============================================================
+model Booking {
+  id          String   @id @default(cuid())
+  roomId      String
+  room        Room     @relation(fields: [roomId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  status      String   @default("confirmed")
+  // pending | confirmed | checked_in | completed | cancelled | no_show
+  bookingType String   @default("regular")
+  // regular | quick_start | on_site
+
+  checkInTime   DateTime?
+  checkedInBy   String?
+  cancelledAt   DateTime?
+  cancelledBy   String?
+  cancelReason  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// 공통
+// ============================================================
+
+// 시스템 설정
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// 엑셀 업로드 이력
+model UploadHistory {
+  id          String   @id @default(cuid())
+  fileName    String
+  totalRows   Int
+  addedRows   Int
+  updatedRows Int
+  errorRows   Int
+  errorDetail String?
+  uploadedBy  String?
+  createdAt   DateTime @default(now())
+}

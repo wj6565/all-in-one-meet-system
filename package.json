@@ -1,20 +1,50 @@
 {
   "name": "webapp",
-  "type": "module",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "wrangler pages dev",
-    "deploy": "npm run build && wrangler pages deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "build:fast": "NEXT_TELEMETRY_DISABLED=1 next build",
+    "start": "next start",
+    "lint": "eslint",
+    "seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:reset": "npx prisma migrate reset --force && npx tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
-    "hono": "^4.12.12"
+    "@prisma/adapter-better-sqlite3": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/formidable": "^3.5.1",
+    "@types/nodemailer": "^8.0.0",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.9.0",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.4.2",
+    "form-data": "^4.0.5",
+    "formidable": "^3.5.4",
+    "lucide-react": "^1.8.0",
+    "next": "16.2.3",
+    "next-auth": "^5.0.0-beta.30",
+    "nodemailer": "^8.0.5",
+    "prisma": "^7.7.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@hono/vite-build": "^1.2.0",
-    "@hono/vite-dev-server": "^0.18.2",
-    "vite": "^6.3.5",
-    "wrangler": "^4.4.0"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.3",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
   }
 }
