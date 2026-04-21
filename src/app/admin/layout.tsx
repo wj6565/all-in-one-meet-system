@@ -14,7 +14,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-slate-50 flex">
       <AdminNav />
-      <main className="flex-1 ml-64 p-6 min-h-screen">
+      {/* PC: ml-64, 모바일: ml-0 + 상단바 높이만큼 pt */}
+      <main className="flex-1 md:ml-64 p-4 sm:p-6 pt-16 md:pt-6 min-h-screen w-full min-w-0">
         {children}
       </main>
     </div>
