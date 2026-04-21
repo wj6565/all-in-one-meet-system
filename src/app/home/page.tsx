@@ -70,7 +70,7 @@ export default function UserHomePage() {
       title: '관리자',
       desc: '시스템 통합 관리',
       subDesc: '예약 관리 · 녹음 이력 · 사용자 관리',
-      href: '/admin/dashboard',
+      href: '/admin',
       color: '#6366f1',
       colorLight: '#e0e7ff',
       colorText: '#3730a3',
@@ -111,7 +111,7 @@ export default function UserHomePage() {
                 <i className="fas fa-calendar-alt text-lg"></i>
               </button>
               {isAdmin && (
-                <button onClick={() => window.location.href = '/admin/dashboard'}
+                <button onClick={() => window.location.href = '/admin'}
                   className="w-10 h-10 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all" title="관리자">
                   <i className="fas fa-cog text-lg"></i>
                 </button>

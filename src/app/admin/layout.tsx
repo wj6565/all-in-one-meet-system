@@ -1,7 +1,6 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import AdminNav from '@/components/AdminNav'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -11,13 +10,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <AdminNav />
-      {/* PC: ml-64, 모바일: ml-0 + 상단바 높이만큼 pt */}
-      <main className="flex-1 md:ml-64 p-4 sm:p-6 pt-16 md:pt-6 min-h-screen w-full min-w-0">
-        {children}
-      </main>
-    </div>
-  )
+  // 메인 /admin 페이지는 자체 레이아웃 (탭 기반) 사용
+  // 기존 하위 페이지들 (dashboard, users, rooms 등)은 직접 접근 시 /admin으로 리다이렉트
+  return <>{children}</>
 }
