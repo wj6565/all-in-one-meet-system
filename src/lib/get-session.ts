@@ -1,7 +1,3 @@
-/**
- * 서버사이드에서 커스텀 JWT 세션을 읽는 헬퍼
- * NextAuth auth() 대신 이 함수를 사용합니다.
- */
 import { decode } from 'next-auth/jwt'
 import { cookies } from 'next/headers'
 
@@ -22,33 +18,36 @@ export async function getSession(): Promise<Session | null> {
     const cookieStore = await cookies()
     const secret = process.env.NEXTAUTH_SECRET || 'integrated-meet-system-secret-2026'
 
-    const secureCookie = cookieStore.get('__Secure-authjs.session-token')
-    const regularCookie = cookieStore.get('authjs.session-token')
-    const sessionCookie = secureCookie || regularCookie
+    // HTTPS(__Secure- prefix)와 HTTP(일반) 두 가지 쿠키 이름 모두 시도
+    const cookieNames = [
+      '__Secure-authjs.session-token',
+      'authjs.session-token',
+    ]
 
-    if (!sessionCookie) return null
+    for (const cookieName of cookieNames) {
+      const sessionCookie = cookieStore.get(cookieName)
+      if (!sessionCookie) continue
 
-    const cookieName = secureCookie
-      ? '__Secure-authjs.session-token'
-      : 'authjs.session-token'
+      const token = await decode({
+        token: sessionCookie.value,
+        secret,
+        salt: cookieName,
+      })
 
-    const token = await decode({
-      token: sessionCookie.value,
-      secret,
-      salt: cookieName,
-    })
+      if (!token) continue
 
-    if (!token) return null
-
-    return {
-      user: {
-        id: (token.id || token.sub) as string,
-        userId: (token.userId || token.sub) as string,
-        email: token.email as string,
-        name: token.name as string,
-        userType: (token.userType || 'user') as string,
-      },
+      return {
+        user: {
+          id: (token.id || token.sub) as string,
+          userId: (token.userId || token.sub) as string,
+          email: token.email as string,
+          name: token.name as string,
+          userType: (token.userType || 'user') as string,
+        },
+      }
     }
+
+    return null
   } catch {
     return null
   }

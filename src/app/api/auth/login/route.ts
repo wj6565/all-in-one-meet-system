@@ -11,11 +11,21 @@ export async function POST(req: Request) {
     }
 
     const secret = process.env.NEXTAUTH_SECRET || 'integrated-meet-system-secret-2026'
-    
-    // HTTPS 여부 판단 (host 기반)
-    const host = req.headers.get('host') || ''
-    const isSecure = !host.includes('localhost')
-    const cookieName = isSecure ? '__Secure-authjs.session-token' : 'authjs.session-token'
+
+    // HTTPS 감지:
+    // 1. x-forwarded-proto 헤더 (일부 프록시에서 전달)
+    // 2. 요청 URL scheme
+    // 3. 호스트명이 localhost/127.0.0.1이 아니면 HTTPS 환경으로 간주
+    const proto = (req.headers as Headers).get('x-forwarded-proto') || ''
+    const host = (req.headers as Headers).get('host') || ''
+    const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1') || host.startsWith('0.0.0.0')
+    const isHttps = proto === 'https' || req.url.startsWith('https') || !isLocalhost
+
+    // HTTPS 환경: __Secure- prefix + Secure 플래그 (브라우저 정책 준수)
+    // HTTP 환경(localhost): 일반 쿠키 이름
+    const cookieName = isHttps
+      ? '__Secure-authjs.session-token'
+      : 'authjs.session-token'
 
     let tokenPayload: Record<string, unknown> | null = null
 
@@ -59,7 +69,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' }, { status: 401 })
     }
 
-    // NextAuth v5 JWT 토큰 생성 (salt 필수)
     const sessionToken = await encode({
       token: tokenPayload,
       secret,
@@ -74,7 +83,7 @@ export async function POST(req: Request) {
 
     response.cookies.set(cookieName, sessionToken, {
       httpOnly: true,
-      secure: isSecure,
+      secure: isHttps,    // HTTPS면 true (브라우저가 쿠키 저장 허용)
       sameSite: 'lax',
       path: '/',
       maxAge: 30 * 24 * 60 * 60,
