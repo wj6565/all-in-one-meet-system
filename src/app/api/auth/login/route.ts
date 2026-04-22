@@ -19,8 +19,10 @@ export async function POST(req: Request) {
 
     let tokenPayload: Record<string, unknown> | null = null
 
-    // 1. 관리자 계정 (Account 테이블) - email로 로그인
-    const account = await prisma.account.findUnique({ where: { email: loginId } })
+    // 1. 관리자 계정 (Account 테이블) - email 또는 id로 로그인
+    const account = await prisma.account.findFirst({
+      where: { OR: [{ email: loginId }, { id: loginId }] }
+    })
     if (account && account.isActive) {
       const match = await bcrypt.compare(password, account.password)
       if (match) {
