@@ -9,17 +9,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
     const { id } = await params
     const body = await req.json()
+    const updateData: Record<string, unknown> = {
+      name: body.name,
+      location: body.location || null,
+      description: body.description || null,
+      capacity: body.capacity || 10,
+      isTabletMode: body.isTabletMode || false,
+      tabletPinCode: body.isTabletMode ? (body.tabletPinCode || null) : null,
+    }
+    if (body.code !== undefined) updateData.code = body.code || null
+    if (body.isActive !== undefined) updateData.isActive = body.isActive
     const room = await prisma.room.update({
       where: { id },
-      data: {
-        name: body.name,
-        code: body.code || null,
-        location: body.location || null,
-        description: body.description || null,
-        capacity: body.capacity || 10,
-        isActive: body.isActive !== false,
-        isTabletMode: body.isTabletMode || false,
-      }
+      data: updateData,
+      include: { _count: { select: { meetings: true } } }
     })
     return NextResponse.json(room)
   } catch (e) {

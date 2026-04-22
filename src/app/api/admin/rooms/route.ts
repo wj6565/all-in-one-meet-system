@@ -7,7 +7,10 @@ export async function GET() {
     if (!session || session.user.userType !== 'admin') {
       return NextResponse.json({ error: '권한 없음' }, { status: 403 })
     }
-    const rooms = await prisma.room.findMany({ orderBy: { name: 'asc' } })
+    const rooms = await prisma.room.findMany({
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { meetings: true } } }
+    })
     return NextResponse.json(rooms)
   } catch (e) {
     console.error(e)
@@ -30,7 +33,10 @@ export async function POST(req: Request) {
         description: body.description || null,
         capacity: body.capacity || 10,
         equipment: body.equipment || null,
-      }
+        isTabletMode: body.isTabletMode || false,
+        tabletPinCode: body.isTabletMode ? (body.tabletPinCode || null) : null,
+      },
+      include: { _count: { select: { meetings: true } } }
     })
     return NextResponse.json(room, { status: 201 })
   } catch (e) {

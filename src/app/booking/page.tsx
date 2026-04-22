@@ -66,8 +66,7 @@ export default function BookingPage() {
   useEffect(() => { fetchBookings() }, [fetchBookings])
 
   const handleLogout = async () => {
-    const { csrfToken } = await fetch('/api/auth/csrf').then(r => r.json())
-    await fetch('/api/auth/signout', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ csrfToken }) })
+    await fetch('/api/auth/signout', { method: 'POST' })
     window.location.href = '/login'
   }
 
@@ -172,7 +171,7 @@ export default function BookingPage() {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center gap-4 sm:gap-6">
             <div className="flex-shrink-0">
-              <Image src="/wonjin-logo.png" alt="WONJIN Group" width={120} height={40}
+              <Image src="/wonjin-logo.png" alt="WONJIN Group" width={217} height={40}
                 style={{ objectFit: 'contain', height: '40px', width: 'auto', filter: 'brightness(0) invert(1)' }} priority />
             </div>
             <div className="flex-1 flex items-center min-w-0">

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/get-session'
+
 // 예약 목록 조회
 export async function GET(req: Request) {
   try {
@@ -10,7 +11,6 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const date = searchParams.get('date')
     const roomId = searchParams.get('roomId')
-
     const mine = searchParams.get('mine')
 
     const where: Record<string, unknown> = {}
@@ -20,10 +20,23 @@ export async function GET(req: Request) {
       const end = new Date(date + 'T23:59:59')
       where.startTime = { gte: start, lte: end }
     }
-    // mine=1 이면 내 예약만
+
     if (mine === '1') {
-      where.userId = session.user.userId
-      // 날짜 미지정 시 status 필터 없이 전체
+      // mine=1: 내 예약만 조회
+      // session.user.userId 가 User 테이블 ID이면 바로 사용
+      // Account(admin)로 로그인한 경우 email로 User 찾기
+      let userId = session.user.userId
+
+      // Account ID인지 확인 (User 테이블에 해당 id가 없으면 Account로 로그인한 것)
+      const userExists = await prisma.user.findUnique({ where: { id: userId } })
+      if (!userExists && session.user.email) {
+        // email로 User 찾기
+        const userByEmail = await prisma.user.findUnique({ where: { email: session.user.email } })
+        if (userByEmail) userId = userByEmail.id
+      }
+
+      where.userId = userId
+      // mine 조회 시 취소된 것도 포함하여 모두 보여줌
     } else {
       where.status = { notIn: ['cancelled'] }
     }
@@ -75,12 +88,20 @@ export async function POST(req: Request) {
     })
     if (overlap) return NextResponse.json({ error: '해당 시간대에 이미 예약이 있습니다' }, { status: 409 })
 
-    // userId 결정 (Account or User)
+    // userId 결정: User 테이블에 존재하는지 확인
     let userId = session.user.userId
-    if (!userId) {
-      // Account로 로그인한 경우 User 찾기
-      const user = await prisma.user.findFirst({ where: { email: session.user.email || '' } })
-      userId = user?.id || session.user.id
+    const userExists = await prisma.user.findUnique({ where: { id: userId } })
+    if (!userExists) {
+      // Account(admin)로 로그인 - email로 User 찾기
+      const userByEmail = session.user.email
+        ? await prisma.user.findUnique({ where: { email: session.user.email } })
+        : null
+      if (userByEmail) {
+        userId = userByEmail.id
+      } else {
+        // User 테이블에 없으면 예약 불가 (admin은 User 레코드 없음)
+        return NextResponse.json({ error: '예약 가능한 사용자 계정이 없습니다. 일반 사용자 계정으로 로그인하세요.' }, { status: 403 })
+      }
     }
 
     const booking = await prisma.booking.create({

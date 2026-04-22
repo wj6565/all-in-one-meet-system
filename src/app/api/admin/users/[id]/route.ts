@@ -52,7 +52,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       data: updateData,
       include: { department: { select: { id: true, name: true } } },
     })
-    return NextResponse.json(user)
+    return NextResponse.json({ ...user, role: user.userType })
   } catch (e) {
     console.error(e)
     return NextResponse.json({ error: '수정 실패' }, { status: 500 })

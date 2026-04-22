@@ -80,7 +80,7 @@ export default function UserHomePage() {
           <div className="flex items-center gap-6">
             {/* 로고 (흰색 처리) */}
             <div className="flex-shrink-0">
-              <Image src="/wonjin-logo.png" alt="WONJIN Group" width={140} height={40}
+              <Image src="/wonjin-logo.png" alt="WONJIN Group" width={217} height={40}
                 style={{ objectFit: 'contain', height: '40px', width: 'auto', filter: 'brightness(0) invert(1)' }} priority />
             </div>
             {/* 타이틀 */}

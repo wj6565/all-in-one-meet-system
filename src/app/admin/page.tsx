@@ -59,6 +59,7 @@ export default function AdminPage() {
   const [admin, setAdmin] = useState<AdminUser | null>(null)
   const [tab, setTab] = useState<Tab>('users')
   const [authLoading, setAuthLoading] = useState(true)
+  const [headerRooms, setHeaderRooms] = useState<{ id: string; name: string; code: string | null }[]>([])
 
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.json()).then(data => {
@@ -66,6 +67,10 @@ export default function AdminPage() {
         window.location.href = '/login'; return
       }
       setAdmin(data.user); setAuthLoading(false)
+    })
+    // 헤더 태블릿 바로가기용 회의실 목록 로드
+    fetch('/api/rooms').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setHeaderRooms(data.slice(0, 4))
     })
   }, [])
 
@@ -108,6 +113,20 @@ export default function AdminPage() {
                   <div className="w-px h-7 bg-white/30" />
                 </div>
               )}
+              {/* 회의실 태블릿 바로가기 버튼 (원본 스타일) */}
+              {headerRooms.map(r => (
+                <button key={r.id}
+                  onClick={() => window.open(`/tablet/${r.code || r.id}`, '_blank')}
+                  title={`${r.name} 태블릿`}
+                  className="hidden sm:flex w-8 h-8 sm:w-9 sm:h-9 items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all">
+                  <i className="fas fa-tablet-alt text-sm sm:text-base"></i>
+                </button>
+              ))}
+              <div className="hidden sm:block w-px h-7 bg-white/30 mx-1" />
+              <button onClick={() => window.location.href = '/booking'} title="예약 시스템"
+                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all">
+                <i className="fas fa-calendar-alt text-sm sm:text-base"></i>
+              </button>
               <button onClick={() => window.location.href = '/home'} title="메인으로"
                 className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all">
                 <i className="fas fa-home text-sm sm:text-base"></i>
@@ -253,6 +272,10 @@ function UsersTab() {
           <p className="text-xs text-gray-400 mt-0.5">권한 배지를 클릭하면 권한을 변경할 수 있습니다</p>
         </div>
         <div className="flex gap-2 flex-shrink-0">
+          <a href="/api/admin/users/excel-template" download
+            className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors">
+            <i className="fas fa-download"></i><span className="hidden sm:inline">템플릿</span>
+          </a>
           <button onClick={() => setShowUpload(true)}
             className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors">
             <i className="fas fa-file-excel"></i><span>엑셀 업로드</span>
