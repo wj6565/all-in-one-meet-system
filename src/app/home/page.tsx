@@ -12,19 +12,13 @@ export default function UserHomePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth/session')
+    fetch('/api/auth/me')
       .then(r => r.json())
       .then(data => { setSession(data); setLoading(false) })
   }, [])
 
   const handleLogout = async () => {
-    const csrfRes = await fetch('/api/auth/csrf')
-    const { csrfToken } = await csrfRes.json()
-    await fetch('/api/auth/signout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ csrfToken }),
-    })
+    await fetch('/api/auth/signout', { method: 'POST' })
     window.location.href = '/login'
   }
 

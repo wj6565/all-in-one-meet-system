@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth-instance'
+import { getSession } from '@/lib/get-session'
 import bcrypt from 'bcryptjs'
 
 export async function GET(req: Request) {
   try {
-    const session = await auth()
+    const session = await getSession()
     if (!session || session.user.userType !== 'admin') {
       return NextResponse.json({ error: '권한 없음' }, { status: 403 })
     }
@@ -39,7 +39,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const session = await auth()
+    const session = await getSession()
     if (!session || session.user.userType !== 'admin') {
       return NextResponse.json({ error: '권한 없음' }, { status: 403 })
     }
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
 // 선택 삭제
 export async function DELETE(req: Request) {
   try {
-    const session = await auth()
+    const session = await getSession()
     if (!session || session.user.userType !== 'admin') {
       return NextResponse.json({ error: '권한 없음' }, { status: 403 })
     }

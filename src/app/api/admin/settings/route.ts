@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth-instance'
+import { getSession } from '@/lib/get-session'
 
 const DEFAULT_SETTINGS: Record<string, string> = {
   emailFromName: '회의록 시스템',
@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const settings = await prisma.setting.findMany()
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const body = await req.json()

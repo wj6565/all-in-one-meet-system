@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth-instance'
+import { getSession } from '@/lib/get-session'
 import { processMeeting } from '@/lib/meeting-processor'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const { id } = await params
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const { id } = await params

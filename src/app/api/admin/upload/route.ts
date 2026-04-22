@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth-instance'
+import { getSession } from '@/lib/get-session'
 import { parseUserExcel } from '@/lib/excel'
 
 export async function POST(req: NextRequest) {
-  const session = await auth()
+  const session = await getSession()
   if (!session) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   const formData = await req.formData()

@@ -40,7 +40,7 @@ export default function BookingPage() {
   })
 
   useEffect(() => {
-    fetch('/api/auth/session').then(r => r.json()).then(data => {
+    fetch('/api/auth/me').then(r => r.json()).then(data => {
       setSession(data)
     })
     fetch('/api/rooms').then(r => r.json()).then(data => {

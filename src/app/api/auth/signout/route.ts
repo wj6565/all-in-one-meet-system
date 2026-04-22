@@ -1,22 +1,31 @@
 import { NextResponse } from 'next/server'
 
-export async function POST() {
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-  const response = NextResponse.redirect(new URL('/login', baseUrl))
-  // 세션 쿠키 삭제
-  response.cookies.delete('__Secure-authjs.session-token')
-  response.cookies.delete('authjs.session-token')
-  response.cookies.delete('__Host-authjs.csrf-token')
-  response.cookies.delete('__Secure-authjs.callback-url')
+function clearSessionCookies(response: NextResponse) {
+  const cookieNames = [
+    '__Secure-authjs.session-token',
+    'authjs.session-token',
+    '__Host-authjs.csrf-token',
+    '__Secure-authjs.callback-url',
+    'authjs.callback-url',
+    'next-auth.session-token',
+    '__Secure-next-auth.session-token',
+  ]
+  cookieNames.forEach(name => {
+    response.cookies.set(name, '', { maxAge: 0, path: '/' })
+  })
   return response
 }
 
-export async function GET() {
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+export async function POST(req: Request) {
+  const host = req.headers.get('host') || ''
+  const baseUrl = host.includes('localhost') ? 'http://localhost:3000' : `https://${host}`
   const response = NextResponse.redirect(new URL('/login', baseUrl))
-  response.cookies.delete('__Secure-authjs.session-token')
-  response.cookies.delete('authjs.session-token')
-  response.cookies.delete('__Host-authjs.csrf-token')
-  response.cookies.delete('__Secure-authjs.callback-url')
-  return response
+  return clearSessionCookies(response)
+}
+
+export async function GET(req: Request) {
+  const host = req.headers.get('host') || ''
+  const baseUrl = host.includes('localhost') ? 'http://localhost:3000' : `https://${host}`
+  const response = NextResponse.redirect(new URL('/login', baseUrl))
+  return clearSessionCookies(response)
 }

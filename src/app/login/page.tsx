@@ -14,37 +14,21 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const csrfRes = await fetch('/api/auth/csrf')
-      const { csrfToken } = await csrfRes.json()
-
-      const res = await fetch('/api/auth/callback/credentials', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ loginId, password, csrfToken, callbackUrl: '/' }),
-        redirect: 'manual',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ loginId, password }),
       })
 
-      if (res.status === 302 || res.status === 200 || res.status === 0) {
-        let session = null
-        for (let i = 0; i < 5; i++) {
-          await new Promise(r => setTimeout(r, 400))
-          const sessionRes = await fetch('/api/auth/session')
-          const data = await sessionRes.json()
-          if (data?.user?.userType) { session = data; break }
-        }
+      const data = await res.json()
 
-        if (session?.user) {
-          const userType = session.user.userType
-          if (userType === 'tablet') {
-            window.location.href = '/tablet'
-          } else {
-            window.location.href = '/home'
-          }
-          return
-        }
+      if (!res.ok) {
+        setError(data.error || '로그인에 실패했습니다.')
+        return
       }
 
-      setError('아이디 또는 비밀번호가 올바르지 않습니다.')
+      // 세션 쿠키가 설정됐으므로 바로 이동
+      window.location.href = data.redirect || '/home'
     } catch {
       setError('서버 연결에 실패했습니다.')
     } finally {
@@ -62,10 +46,10 @@ export default function LoginPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/wonjin-logo.png" alt="WONJIN Group" style={{ height: '60px', width: 'auto' }} />
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#2f4394', letterSpacing: '-0.5px', marginBottom: '6px' }}>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: '#2f4394', letterSpacing: '-0.5px', marginBottom: '6px' }}>
             ALL IN ONE MEET SYSTEM
           </div>
-          <div style={{ fontSize: '14px', fontWeight: 500, color: '#6c757d', letterSpacing: '0.5px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 500, color: '#6c757d' }}>
             회의실 예약 · 녹음 · 전사 · 자동 메일 발송
           </div>
         </div>
@@ -105,28 +89,28 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full font-semibold py-3 rounded-lg text-white transition disabled:opacity-50"
+            className="w-full font-semibold py-3 rounded-lg text-white transition disabled:opacity-50 flex items-center justify-center gap-2"
             style={{ background: '#2f4394' }}>
             {loading ? (
-              <span className="flex items-center justify-center gap-2">
+              <>
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 로그인 중...
-              </span>
+              </>
             ) : '로그인'}
           </button>
         </form>
 
         <div className="mt-6 pt-6 border-t space-y-2">
           <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold flex-shrink-0">A</span>
+            <span className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold flex-shrink-0 text-xs">A</span>
             <span>관리자: 이메일 주소로 로그인</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold flex-shrink-0">U</span>
+            <span className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold flex-shrink-0 text-xs">U</span>
             <span>사용자: 관리자가 설정한 아이디로 로그인</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold flex-shrink-0">T</span>
+            <span className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold flex-shrink-0 text-xs">T</span>
             <span>태블릿: 태블릿 전용 아이디로 로그인</span>
           </div>
         </div>

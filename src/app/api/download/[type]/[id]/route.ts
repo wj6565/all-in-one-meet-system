@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth-instance'
+import { getSession } from '@/lib/get-session'
 import { generateSampleUserExcel } from '@/lib/excel'
 import * as fs from 'fs'
 
@@ -21,7 +21,7 @@ export async function GET(
     })
   }
 
-  const session = await auth()
+  const session = await getSession()
   if (!session) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
 
   if (type === 'excel') {

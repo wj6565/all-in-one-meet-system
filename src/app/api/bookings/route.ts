@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth-instance'
+import { getSession } from '@/lib/get-session'
 // 예약 목록 조회
 export async function GET(req: Request) {
   try {
-    const session = await auth()
+    const session = await getSession()
     if (!session) return NextResponse.json({ error: '로그인 필요' }, { status: 401 })
 
     const { searchParams } = new URL(req.url)
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 // 예약 생성
 export async function POST(req: Request) {
   try {
-    const session = await auth()
+    const session = await getSession()
     if (!session) return NextResponse.json({ error: '로그인 필요' }, { status: 401 })
 
     const body = await req.json()

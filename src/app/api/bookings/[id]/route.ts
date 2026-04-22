@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth-instance'
+import { getSession } from '@/lib/get-session'
 // 예약 취소
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth()
+    const session = await getSession()
     if (!session) return NextResponse.json({ error: '로그인 필요' }, { status: 401 })
     const { id } = await params
     const booking = await prisma.booking.findUnique({ where: { id } })
@@ -25,7 +25,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 // 예약 수정
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth()
+    const session = await getSession()
     if (!session) return NextResponse.json({ error: '로그인 필요' }, { status: 401 })
     const { id } = await params
     const body = await req.json()

@@ -30,7 +30,7 @@ export default function AdminNav() {
 
   // 관리자 세션 정보 로드
   useEffect(() => {
-    fetch('/api/auth/session')
+    fetch('/api/auth/me')
       .then(r => r.json())
       .then(data => {
         if (data?.user) setAdminUser(data.user)

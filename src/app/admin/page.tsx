@@ -81,7 +81,7 @@ export default function AdminPage() {
   const [authLoading, setAuthLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth/session').then(r => r.json()).then(data => {
+    fetch('/api/auth/me').then(r => r.json()).then(data => {
       if (!data?.user || data.user.userType !== 'admin') {
         window.location.href = '/login'
         return
@@ -92,13 +92,7 @@ export default function AdminPage() {
   }, [])
 
   const handleLogout = async () => {
-    const csrfRes = await fetch('/api/auth/csrf')
-    const { csrfToken } = await csrfRes.json()
-    await fetch('/api/auth/signout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ csrfToken }),
-    })
+    await fetch('/api/auth/signout', { method: 'POST' })
     window.location.href = '/login'
   }
 

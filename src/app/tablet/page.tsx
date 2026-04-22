@@ -54,7 +54,7 @@ export default function TabletPage() {
 
   // 세션 확인
   useEffect(() => {
-    fetch('/api/auth/session').then(r => r.json()).then(setSession)
+    fetch('/api/auth/me').then(r => r.json()).then(setSession)
   }, [])
 
   const loadData = useCallback(async () => {
