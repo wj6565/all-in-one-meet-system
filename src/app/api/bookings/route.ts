@@ -11,6 +11,8 @@ export async function GET(req: Request) {
     const date = searchParams.get('date')
     const roomId = searchParams.get('roomId')
 
+    const mine = searchParams.get('mine')
+
     const where: Record<string, unknown> = {}
     if (roomId) where.roomId = roomId
     if (date) {
@@ -18,7 +20,13 @@ export async function GET(req: Request) {
       const end = new Date(date + 'T23:59:59')
       where.startTime = { gte: start, lte: end }
     }
-    where.status = { notIn: ['cancelled'] }
+    // mine=1 이면 내 예약만
+    if (mine === '1') {
+      where.userId = session.user.userId
+      // 날짜 미지정 시 status 필터 없이 전체
+    } else {
+      where.status = { notIn: ['cancelled'] }
+    }
 
     const bookings = await prisma.booking.findMany({
       where,

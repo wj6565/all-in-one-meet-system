@@ -14,7 +14,7 @@ interface Room {
 }
 interface Booking {
   id: string; title: string; startTime: string; endTime: string; status: string
-  room: { id: string; name: string }
+  room: { id: string; name: string; location: string | null }
   user: { id: string; name: string; department?: { name: string } | null }
 }
 interface Session { user: { name: string; email: string; userType: string; userId: string; department?: { name: string } | null } }
@@ -23,6 +23,7 @@ export default function BookingPage() {
   const [session, setSession] = useState<Session | null>(null)
   const [rooms, setRooms] = useState<Room[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [myBookings, setMyBookings] = useState<Booking[]>([])
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [showModal, setShowModal] = useState(false)
@@ -40,14 +41,20 @@ export default function BookingPage() {
   })
 
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.json()).then(data => {
-      setSession(data)
-    })
+    fetch('/api/auth/me').then(r => r.json()).then(data => setSession(data))
     fetch('/api/rooms').then(r => r.json()).then(data => {
       setRooms(data)
       setLoading(false)
     })
+    loadMyBookings()
   }, [])
+
+  const loadMyBookings = async () => {
+    try {
+      const data = await fetch('/api/bookings?mine=1').then(r => r.json())
+      setMyBookings(Array.isArray(data) ? data : [])
+    } catch { /* ignore */ }
+  }
 
   const fetchBookings = useCallback(async () => {
     const params = new URLSearchParams({ date: selectedDate })
@@ -85,6 +92,7 @@ export default function BookingPage() {
       setShowModal(false)
       setForm({ title: '', description: '', startTime: '09:00', endTime: '10:00', roomId: '' })
       fetchBookings()
+      loadMyBookings()
     } catch { setError('서버 오류') } finally { setSubmitLoading(false) }
   }
 
@@ -92,6 +100,7 @@ export default function BookingPage() {
     if (!confirm('예약을 취소하시겠습니까?')) return
     await fetch(`/api/bookings/${id}`, { method: 'DELETE' })
     fetchBookings()
+    loadMyBookings()
   }
 
   // 빠른 예약 - 현재시간 기준 다음 30분 단위 자동설정
@@ -132,8 +141,20 @@ export default function BookingPage() {
   }
 
   const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+  const fmtDateTime = (iso: string) => {
+    const d = new Date(iso)
+    return d.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' }) + ' ' +
+      d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+  }
   const today = new Date().toISOString().split('T')[0]
   const isToday = selectedDate === today
+
+  // 내 예약 중 오늘 예약
+  const myTodayBookings = myBookings.filter(b => {
+    const d = new Date(b.startTime).toISOString().split('T')[0]
+    return d === today && b.status !== 'cancelled'
+  })
+  const myActiveBookings = myBookings.filter(b => b.status !== 'cancelled')
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2f4394 0%, #4169e1 100%)' }}>
@@ -146,22 +167,18 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 헤더 - 참조 시스템과 동일한 스타일 */}
+      {/* 헤더 */}
       <div className="shadow-md sticky top-0 z-20" style={{ background: 'linear-gradient(135deg, #2f4394 0%, #4169e1 100%)' }}>
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center gap-4 sm:gap-6">
-            {/* 로고 */}
             <div className="flex-shrink-0">
               <Image src="/wonjin-logo.png" alt="WONJIN Group" width={120} height={40}
                 style={{ objectFit: 'contain', height: '40px', width: 'auto', filter: 'brightness(0) invert(1)' }} priority />
             </div>
-            {/* 타이틀 */}
             <div className="flex-1 flex items-center min-w-0">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white tracking-tight">회의실 예약 시스템</h1>
             </div>
-            {/* 우측: 사용자 정보 + 버튼들 */}
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              {/* 사용자 정보 (PC만) */}
               <div className="hidden md:flex items-center gap-3 text-white">
                 <div className="text-right">
                   <p className="text-sm font-semibold">{session?.user?.name}</p>
@@ -189,53 +206,59 @@ export default function BookingPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        {/* 요약 카드 - 참조 시스템 동일 */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="bg-white rounded-xl shadow-sm p-3 sm:p-5 border border-gray-100">
+
+        {/* 요약 카드 - 원본 스타일 그라데이션 */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 sm:mb-5">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-3 sm:p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">전체 회의실</p>
-                <p className="text-2xl sm:text-3xl font-bold text-blue-600">{rooms.length}</p>
+                <p className="text-xs opacity-90">내 예약</p>
+                <p className="text-2xl font-bold">{myActiveBookings.length}</p>
               </div>
-              <i className="fas fa-door-open text-2xl sm:text-4xl text-blue-200"></i>
+              <i className="fas fa-calendar-check text-3xl opacity-40"></i>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-3 sm:p-5 border border-gray-100">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-3 sm:p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">내 예약</p>
-                <p className="text-2xl sm:text-3xl font-bold text-green-600">
-                  {bookings.filter(b => b.user?.id === session?.user?.userId && b.status !== 'cancelled').length}
-                </p>
+                <p className="text-xs opacity-90">오늘 내 예약</p>
+                <p className="text-2xl font-bold">{myTodayBookings.length}</p>
               </div>
-              <i className="fas fa-calendar-check text-2xl sm:text-4xl text-green-200"></i>
+              <i className="fas fa-calendar-day text-3xl opacity-40"></i>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-3 sm:p-5 border border-gray-100">
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-3 sm:p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500">오늘 예약</p>
-                <p className="text-2xl sm:text-3xl font-bold text-purple-600">
-                  {bookings.filter(b => b.status !== 'cancelled').length}
-                </p>
+                <p className="text-xs opacity-90">전체 회의실</p>
+                <p className="text-2xl font-bold">{rooms.length}</p>
               </div>
-              <i className="fas fa-clock text-2xl sm:text-4xl text-purple-200"></i>
+              <i className="fas fa-door-open text-3xl opacity-40"></i>
             </div>
+          </div>
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-3 sm:p-4 text-white">
+            <button onClick={() => openNewBooking()}
+              className="w-full h-full flex flex-col items-center justify-center gap-1 hover:scale-105 transition-transform">
+              <i className="fas fa-plus-circle text-3xl"></i>
+              <p className="text-xs font-semibold">새 예약</p>
+            </button>
           </div>
         </div>
 
-        {/* 날짜 선택 + 뷰 전환 + 예약 버튼 */}
+        {/* 날짜 선택 + 뷰 전환 */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-5">
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm" />
-            {isToday && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">오늘</span>}
-            {/* 뷰 전환 */}
-            <div className="flex bg-gray-100 rounded-xl p-0.5">
+            <div className="flex items-center gap-2 bg-white rounded-xl shadow-sm border border-gray-200 px-3 py-2">
+              <i className="fas fa-calendar-alt text-gray-400 text-sm"></i>
+              <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
+                className="text-sm focus:outline-none bg-transparent" />
+              {isToday && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">오늘</span>}
+            </div>
+            <div className="flex bg-white border border-gray-200 rounded-xl shadow-sm p-0.5">
               {(['board', 'list'] as const).map(v => (
                 <button key={v} onClick={() => setView(v)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-                    view === v ? 'bg-white shadow text-gray-800' : 'text-gray-500 hover:text-gray-700'
+                    view === v ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'
                   }`}>
                   {v === 'board'
                     ? <><i className="fas fa-th-large mr-1"></i>현황판</>
@@ -243,17 +266,17 @@ export default function BookingPage() {
                 </button>
               ))}
             </div>
-          </div>
-          <div className="sm:ml-auto">
-            <button onClick={() => openNewBooking()}
-              className="flex items-center gap-2 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors shadow-sm whitespace-nowrap"
-              style={{ background: '#2f4394' }}>
-              <i className="fas fa-plus"></i>새 예약
+            <button onClick={() => { fetchBookings(); loadMyBookings() }}
+              className="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-blue-500 hover:border-blue-300 shadow-sm transition-colors">
+              <i className="fas fa-sync-alt text-sm"></i>
             </button>
+          </div>
+          <div className="sm:ml-auto flex items-center gap-2">
+            <span className="text-xs text-gray-400">{new Date(selectedDate).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })} 회의실 현황</span>
           </div>
         </div>
 
-        {/* 예약현황판 */}
+        {/* 예약현황판 (board view) */}
         {view === 'board' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-5">
             {rooms.map(room => {
@@ -265,7 +288,7 @@ export default function BookingPage() {
                 <div key={room.id}
                   onClick={() => setSelectedRoom(isSelected ? null : room)}
                   className={`bg-white rounded-xl border-2 cursor-pointer transition-all shadow-sm hover:shadow-md flex flex-col ${
-                    isSelected ? 'border-blue-500' : 'border-gray-200 hover:border-blue-300'
+                    isSelected ? 'border-blue-500 shadow-blue-100' : 'border-gray-200 hover:border-blue-300'
                   }`}>
                   {/* 카드 헤더 */}
                   <div className="p-3 sm:p-4 pb-2">
@@ -288,7 +311,7 @@ export default function BookingPage() {
                         )}
                       </div>
                     </div>
-                    {/* 진행 중 예약 */}
+                    {/* 현재 진행 중 예약 */}
                     {statusBooking && (
                       <div className={`mt-2 p-2 rounded-lg border text-xs ${bgLight}`}>
                         <p className={`font-semibold truncate ${textColor}`}>{statusBooking.title}</p>
@@ -297,43 +320,57 @@ export default function BookingPage() {
                     )}
                   </div>
 
-                  {/* 오늘 타임라인 */}
-                  {isToday && (
-                    <div className="px-3 sm:px-4 pb-2">
-                      <div className="flex gap-0.5 h-3 sm:h-4">
-                        {Array.from({ length: 22 }, (_, i) => {
-                          const slotH = Math.floor(i / 2) + 9
-                          const slotM = i % 2 === 0 ? 0 : 30
-                          const slotDate = new Date(`${selectedDate}T${String(slotH).padStart(2,'0')}:${String(slotM).padStart(2,'0')}:00`)
-                          const active = roomBookings.find(b => new Date(b.startTime) <= slotDate && new Date(b.endTime) > slotDate)
-                          return (
-                            <div key={i} className={`flex-1 rounded-sm ${active ? 'bg-blue-400' : 'bg-gray-100'}`}
-                              title={active ? `${active.title} ${fmtTime(active.startTime)}~${fmtTime(active.endTime)}` : ''} />
-                          )
-                        })}
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-300 mt-0.5">
-                        <span>9시</span><span>13시</span><span>18시</span>
-                      </div>
+                  {/* 타임라인 (9시~20시) */}
+                  <div className="px-3 sm:px-4 pb-2">
+                    <div className="relative h-3 sm:h-4 bg-gray-100 rounded-full overflow-hidden">
+                      {roomBookings.map(b => {
+                        const dayStart = new Date(`${selectedDate}T09:00:00`).getTime()
+                        const dayEnd = new Date(`${selectedDate}T20:00:00`).getTime()
+                        const totalMs = dayEnd - dayStart
+                        const bStart = Math.max(new Date(b.startTime).getTime(), dayStart)
+                        const bEnd = Math.min(new Date(b.endTime).getTime(), dayEnd)
+                        const left = ((bStart - dayStart) / totalMs) * 100
+                        const width = ((bEnd - bStart) / totalMs) * 100
+                        const now = new Date().getTime()
+                        const isActive = now >= new Date(b.startTime).getTime() && now < new Date(b.endTime).getTime()
+                        const isPast = now >= new Date(b.endTime).getTime()
+                        const bg = isPast ? 'bg-gray-400' : isActive ? 'bg-red-500' : 'bg-blue-500'
+                        return (
+                          <div key={b.id} className={`absolute top-0 h-full ${bg} opacity-80`}
+                            style={{ left: `${left}%`, width: `${Math.max(width, 1)}%` }}
+                            title={`${b.title} ${fmtTime(b.startTime)}~${fmtTime(b.endTime)}`} />
+                        )
+                      })}
                     </div>
-                  )}
+                    <div className="flex justify-between text-xs text-gray-300 mt-0.5">
+                      <span>9시</span><span>14시</span><span>20시</span>
+                    </div>
+                  </div>
 
                   {/* 예약 목록 미리보기 */}
                   <div className="px-3 sm:px-4 pb-2 flex-1">
                     {roomBookings.length > 0 ? (
                       <div className="space-y-1">
-                        {roomBookings.slice(0, 3).map(b => (
-                          <div key={b.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 py-1.5">
-                            <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">{fmtTime(b.startTime)}</span>
-                            <p className="text-xs text-gray-700 truncate flex-1">{b.title}</p>
-                          </div>
-                        ))}
+                        {roomBookings.slice(0, 3).map(b => {
+                          const now = new Date()
+                          const isActive = now >= new Date(b.startTime) && now < new Date(b.endTime)
+                          const isPast = now >= new Date(b.endTime)
+                          return (
+                            <div key={b.id} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${isActive ? 'bg-red-50' : isPast ? 'bg-gray-50' : 'bg-blue-50'}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-red-500' : isPast ? 'bg-gray-400' : 'bg-blue-500'}`}></span>
+                              <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">{fmtTime(b.startTime)}</span>
+                              <p className="text-xs text-gray-700 truncate flex-1">{b.title}</p>
+                            </div>
+                          )
+                        })}
                         {roomBookings.length > 3 && (
                           <p className="text-xs text-center text-gray-400">+{roomBookings.length - 3}건 더</p>
                         )}
                       </div>
                     ) : (
-                      <p className="text-center text-xs text-gray-400 py-2">예약 없음</p>
+                      <p className="text-center text-xs text-gray-400 py-2">
+                        <i className="fas fa-check-circle mr-1 text-green-400"></i>예약 없음
+                      </p>
                     )}
                   </div>
 
@@ -347,10 +384,11 @@ export default function BookingPage() {
                       <span className="truncate">{room.name} 빠른 예약</span>
                     </button>
                     <button
-                        onClick={e => { e.stopPropagation(); window.open(`/tablet/${room.code || room.id}`, '_blank') }}
-                        className="w-full py-1.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-lg hover:bg-purple-200 transition-colors flex items-center justify-center gap-1.5">
-                        <i className="fas fa-tablet-alt"></i> 태블릿 화면
-                      </button>
+                      onClick={e => { e.stopPropagation(); window.open(`/tablet/${room.code || room.id}`, '_blank') }}
+                      className="w-full py-1.5 text-white text-xs font-semibold rounded-lg hover:opacity-90 flex items-center justify-center gap-1.5 transition-opacity"
+                      style={{ background: 'linear-gradient(to right, #6b21a8, #7c3aed)' }}>
+                      <i className="fas fa-tablet-alt"></i> 태블릿 화면
+                    </button>
                   </div>
                 </div>
               )
@@ -358,8 +396,8 @@ export default function BookingPage() {
           </div>
         )}
 
-        {/* 예약 목록 */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* 예약 현황 목록 */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-4 sm:mb-5">
           <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap min-w-0">
               <h2 className="font-bold text-gray-800 text-sm sm:text-base flex items-center gap-1.5 whitespace-nowrap">
@@ -384,7 +422,7 @@ export default function BookingPage() {
           </div>
 
           {bookings.length === 0 ? (
-            <div className="text-center py-10 sm:py-14 text-gray-400">
+            <div className="text-center py-10 sm:py-12 text-gray-400">
               <i className="fas fa-calendar-times text-4xl sm:text-5xl mb-3 block"></i>
               <p className="text-sm mb-3">예약이 없습니다</p>
               <button onClick={() => openNewBooking()}
@@ -432,26 +470,66 @@ export default function BookingPage() {
               })}
             </div>
           )}
+        </div>
 
-          {/* 타임라인 바 */}
-          {view === 'board' && bookings.length > 0 && (
-            <div className="px-3 sm:px-5 py-3 border-t border-gray-100 bg-gray-50">
-              <p className="text-xs font-semibold text-gray-400 mb-2 flex items-center gap-1">
-                <i className="fas fa-clock"></i> 타임라인 ({selectedDate})
-              </p>
-              <div className="flex gap-0.5 overflow-x-auto pb-1">
-                {timeSlots.map(slot => {
-                  const slotDate = new Date(`${selectedDate}T${slot}:00`)
-                  const active = bookings.find(b => new Date(b.startTime) <= slotDate && new Date(b.endTime) > slotDate && b.status !== 'cancelled')
-                  return (
-                    <div key={slot} className="flex-shrink-0 w-7 sm:w-8 text-center">
-                      <div className={`h-4 sm:h-5 rounded ${active ? 'bg-blue-500' : 'bg-gray-200'}`}
-                        title={active ? `${active.title} (${active.room.name})` : ''} />
-                      <p className="text-xs text-gray-300 mt-0.5 leading-none">{slot.endsWith(':00') ? slot.slice(0,2) : ''}</p>
+        {/* 내 예약 목록 패널 (원본 참조 스타일) */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-3 sm:px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="font-bold text-sm sm:text-base flex items-center gap-1.5" style={{ color: '#2f4394' }}>
+              <i className="fas fa-list mr-1"></i>내 예약 목록
+            </h3>
+            <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+              총 {myActiveBookings.length}건
+            </span>
+          </div>
+          {myBookings.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              <i className="fas fa-calendar-times text-3xl mb-2 block"></i>
+              <p className="text-sm">예약 내역이 없습니다</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {myBookings.slice(0, 5).map(b => {
+                const now = new Date()
+                const isPast = now >= new Date(b.endTime)
+                const canCancel = !isPast && b.status !== 'cancelled' && b.status !== 'completed'
+                const statusCls: Record<string, string> = {
+                  confirmed:  'bg-blue-100 text-blue-700',
+                  checked_in: 'bg-green-100 text-green-700',
+                  completed:  'bg-gray-100 text-gray-500',
+                  cancelled:  'bg-red-100 text-red-500',
+                }
+                const statusLabel: Record<string, string> = {
+                  confirmed: '예약됨', checked_in: '체크인', completed: '완료', cancelled: '취소됨'
+                }
+                return (
+                  <div key={b.id} className={`px-3 sm:px-5 py-3 flex items-start gap-3 ${isPast ? 'opacity-60' : ''}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-semibold text-sm whitespace-nowrap truncate max-w-[120px]">{b.room.name}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs whitespace-nowrap ${statusCls[b.status] || 'bg-gray-100 text-gray-500'}`}>
+                          {statusLabel[b.status] || b.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700 truncate">{b.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {fmtDateTime(b.startTime)} ~ {fmtTime(b.endTime)}
+                      </p>
                     </div>
-                  )
-                })}
-              </div>
+                    {canCancel && (
+                      <button onClick={() => handleCancel(b.id)}
+                        className="flex-shrink-0 text-xs text-red-400 hover:text-red-600 px-2 py-1.5 rounded-lg hover:bg-red-50 border border-red-200 transition-colors whitespace-nowrap">
+                        취소
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+              {myBookings.length > 5 && (
+                <div className="px-5 py-3 text-center text-xs text-gray-400">
+                  최근 5건만 표시됩니다 (전체 {myBookings.length}건)
+                </div>
+              )}
             </div>
           )}
         </div>
