@@ -170,7 +170,7 @@ export default function BookingPage() {
                 <div className="w-px h-8 bg-white opacity-30"></div>
               </div>
               {session?.user?.userType === 'admin' && (
-                <button onClick={() => window.location.href = '/admin/dashboard'}
+                <button onClick={() => window.location.href = '/admin'}
                   className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center text-white hover:bg-white/20 rounded-lg transition-all" title="관리자">
                   <i className="fas fa-cog text-lg"></i>
                 </button>
@@ -346,13 +346,11 @@ export default function BookingPage() {
                       <i className="fas fa-bolt"></i>
                       <span className="truncate">{room.name} 빠른 예약</span>
                     </button>
-                    {room.isTabletMode && (
-                      <button
+                    <button
                         onClick={e => { e.stopPropagation(); window.open(`/tablet/${room.code || room.id}`, '_blank') }}
                         className="w-full py-1.5 bg-purple-100 text-purple-700 text-xs font-semibold rounded-lg hover:bg-purple-200 transition-colors flex items-center justify-center gap-1.5">
                         <i className="fas fa-tablet-alt"></i> 태블릿 화면
                       </button>
-                    )}
                   </div>
                 </div>
               )
