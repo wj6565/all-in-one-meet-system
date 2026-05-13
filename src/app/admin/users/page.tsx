@@ -153,9 +153,13 @@ export default function UsersPage() {
   }
 
   const handleRoleChange = async (user: User, newRole: string) => {
-    setRoleDropdown(null)
+    // confirm() 먼저 실행 (dropdown 닫기 전) → race condition 방지
     const label = ROLE_CONFIG[newRole]?.label || newRole
-    if (!confirm(`"${user.name}"의 계정 유형을 "${label}"(으)로 변경하시겠습니까?`)) return
+    if (!confirm(`"${user.name}"의 계정 유형을 "${label}"(으)로 변경하시겠습니까?`)) {
+      setRoleDropdown(null)
+      return
+    }
+    setRoleDropdown(null)
     const res = await fetch(`/api/admin/users/${user.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

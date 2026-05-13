@@ -14,6 +14,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       endedAt: true,
       errorMessage: true,
       retryCount: true,
+      summaryData: true,
+      transcriptText: true,
       _count: { select: { emailLogs: true } },
       emailLogs: {
         select: { status: true },
@@ -26,9 +28,29 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const emailSent = meeting.emailLogs.filter(e => e.status === 'sent').length
   const emailFailed = meeting.emailLogs.filter(e => e.status === 'failed').length
 
+  // summaryData JSON 파싱
+  let summaryData = null
+  if (meeting.summaryData) {
+    try {
+      summaryData = typeof meeting.summaryData === 'string'
+        ? JSON.parse(meeting.summaryData as string)
+        : meeting.summaryData
+    } catch {
+      summaryData = null
+    }
+  }
+
   return NextResponse.json({
-    ...meeting,
+    id: meeting.id,
+    status: meeting.status,
+    title: meeting.title,
+    startedAt: meeting.startedAt,
+    endedAt: meeting.endedAt,
+    errorMessage: meeting.errorMessage,
+    retryCount: meeting.retryCount,
     emailSent,
     emailFailed,
+    summaryData,
+    transcriptText: meeting.transcriptText,
   })
 }

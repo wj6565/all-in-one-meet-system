@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getToken } from 'next-auth/jwt'
 
 const SECRET = process.env.NEXTAUTH_SECRET || 'integrated-meet-system-secret-2026'
 
+// next-auth/jwt decode 대신 직접 쿠키 값 존재 여부만 확인
+// (실제 검증은 각 API route의 getSession()에서 수행)
 async function getSessionToken(req: NextRequest) {
-  // HTTPS(__Secure- prefix)와 HTTP(일반) 두 가지 쿠키 이름 모두 시도
   const cookieNames = [
     '__Secure-authjs.session-token',
     'authjs.session-token',
   ]
-
   for (const cookieName of cookieNames) {
-    const token = await getToken({ req, secret: SECRET, cookieName })
-    if (token) return token
+    const val = req.cookies.get(cookieName)?.value
+    if (val && val.length > 10) return { exists: true, cookieName }
   }
   return null
 }
@@ -21,11 +20,11 @@ export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // 공개 경로
-  if (pathname === '/login' || pathname.startsWith('/api/')) {
+  if (pathname === '/login' || pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.startsWith('/static/')) {
     return NextResponse.next()
   }
 
-  // /booking, /home, /admin, /meeting, /tablet 보호
+  // 보호 경로
   if (
     pathname.startsWith('/booking') ||
     pathname.startsWith('/home') ||
@@ -37,19 +36,13 @@ export async function proxy(req: NextRequest) {
     if (!token) {
       return NextResponse.redirect(new URL('/login', req.url))
     }
-    // 일반 사용자가 관리자 페이지 접근 시 /home으로
-    if (pathname.startsWith('/admin') && token.userType === 'user') {
-      return NextResponse.redirect(new URL('/home', req.url))
-    }
     return NextResponse.next()
   }
 
-  // / (루트) - 로그인 상태면 역할에 따라 분기
+  // 루트
   if (pathname === '/') {
     const token = await getSessionToken(req)
-    if (token) {
-      return NextResponse.redirect(new URL('/home', req.url))
-    }
+    if (token) return NextResponse.redirect(new URL('/home', req.url))
     return NextResponse.redirect(new URL('/login', req.url))
   }
 

@@ -3,10 +3,11 @@ module.exports = {
     {
       name: 'meeting-system',
       script: 'node_modules/.bin/next',
-      args: 'dev -p 3000',
+      args: 'start -p 3000',
       cwd: '/home/user/webapp',
+      node_args: '--max-old-space-size=512',
       env: {
-        NODE_ENV: 'development',
+        NODE_ENV: 'production',
         PORT: 3000,
         AUTH_TRUST_HOST: '1',
         NEXTAUTH_URL: 'https://3000-ijs4eutws43johl4tqboy-de59bda9.sandbox.novita.ai',
@@ -16,6 +17,7 @@ module.exports = {
       watch: false,
       instances: 1,
       exec_mode: 'fork',
+      max_memory_restart: '500M',
     }
   ]
 }
