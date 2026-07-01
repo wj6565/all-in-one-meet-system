@@ -67,9 +67,27 @@ class OpenAISTTProvider implements STTProvider {
   }
 
   async transcribe(audioPath: string): Promise<{ text: string; segments: TranscriptSegment[] }> {
-    const FormData = (await import('form-data')).default
+    // 파일 읽기
+    const fileBuffer = fs.readFileSync(audioPath)
+    const fileName = audioPath.split('/').pop() || 'audio.webm'
+    const ext = fileName.split('.').pop()?.toLowerCase() || 'webm'
+
+    // MIME 타입 결정 (Whisper 지원 포맷)
+    const mimeMap: Record<string, string> = {
+      webm: 'audio/webm',
+      mp4: 'audio/mp4',
+      m4a: 'audio/m4a',
+      mp3: 'audio/mpeg',
+      wav: 'audio/wav',
+      ogg: 'audio/ogg',
+      flac: 'audio/flac',
+    }
+    const mimeType = mimeMap[ext] || 'audio/webm'
+
+    // Node.js 내장 FormData + Blob 사용 (fetch 호환)
+    const blob = new Blob([fileBuffer], { type: mimeType })
     const form = new FormData()
-    form.append('file', fs.createReadStream(audioPath))
+    form.append('file', blob, fileName)
     form.append('model', 'whisper-1')
     form.append('language', 'ko')
     form.append('response_format', 'verbose_json')
@@ -78,9 +96,9 @@ class OpenAISTTProvider implements STTProvider {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
-        ...form.getHeaders(),
+        // Content-Type은 FormData가 자동으로 boundary 포함하여 설정 — 명시하지 않음
       },
-      body: form as unknown as BodyInit,
+      body: form,
     })
 
     if (!response.ok) {

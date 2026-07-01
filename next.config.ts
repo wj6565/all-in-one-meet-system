@@ -11,16 +11,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '50mb',
     },
   },
-  serverExternalPackages: ['@prisma/client', 'prisma', 'bcryptjs', 'nodemailer', 'better-sqlite3', 'form-data'],
+  serverExternalPackages: ['@prisma/client', 'prisma', 'bcryptjs', 'nodemailer', 'better-sqlite3'],
   images: {
     unoptimized: true,
   },
   // 빌드 속도 최적화
   typescript: {
     ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 }
 
