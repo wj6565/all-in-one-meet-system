@@ -49,3 +49,4 @@ dev.db
 dev.db-journal
 /uploads/
 /scripts/
+ecosystem.config.cjs
